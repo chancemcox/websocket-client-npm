@@ -1,0 +1,464 @@
+/**
+ * @fileoverview A modern, feature-rich WebSocket client with event handling, reconnection, and ping/pong support
+ * @author Your Name
+ * @version 1.0.0
+ */
+
+import ReconnectingWebSocket from 'reconnecting-websocket';
+
+/**
+ * WebSocket client class that provides a robust, event-driven interface for WebSocket communication
+ * @class WebSocketClient
+ */
+export class WebSocketClient {
+  /**
+   * Create a new WebSocket client instance
+   * @param {string|WebSocket|ReconnectingWebSocket} socket - WebSocket URL, WebSocket instance, or ReconnectingWebSocket instance
+   * @param {Object} options - Configuration options
+   * @param {number} options.pingInterval - Ping interval in seconds (default: 15)
+   * @param {boolean} options.autoPing - Whether to automatically send ping messages (default: true)
+   * @param {boolean} options.debug - Enable debug logging (default: false)
+   */
+  constructor(socket, options = {}) {
+    this.options = {
+      pingInterval: options.pingInterval || 15,
+      autoPing: options.autoPing !== false,
+      debug: options.debug || false,
+      ...options
+    };
+
+    this.eventTarget = document.createElement('div');
+    this.open = false;
+    this.connectionId = null;
+    this.pingTimer = null;
+    this.messageQueue = [];
+    this.eventListeners = new Map();
+
+    // Initialize socket
+    this.initializeSocket(socket);
+
+    // Bind methods to preserve context
+    this.addEventListener = this.eventTarget.addEventListener.bind(this.eventTarget);
+    this.removeEventListener = this.eventTarget.removeEventListener.bind(this.eventTarget);
+    this.dispatchEvent = this.eventTarget.dispatchEvent.bind(this.eventTarget);
+
+    // Setup event handling
+    this.setupEvents();
+
+    // Start auto-ping if enabled
+    if (this.options.autoPing) {
+      this.startAutoPing();
+    }
+
+    this.log('WebSocket client initialized', { options: this.options });
+  }
+
+  /**
+   * Initialize the WebSocket connection
+   * @param {string|WebSocket|ReconnectingWebSocket} socket - Socket to initialize
+   * @private
+   */
+  initializeSocket(socket) {
+    if (typeof socket === 'string') {
+      // Create ReconnectingWebSocket if URL is provided
+      this.socket = new ReconnectingWebSocket(socket, null, {
+        reconnectInterval: 1000,
+        timeoutInterval: 10000,
+        maxReconnectAttempts: 10
+      });
+    } else if (socket instanceof ReconnectingWebSocket) {
+      this.socket = socket;
+    } else if (socket instanceof WebSocket) {
+      // Wrap regular WebSocket in ReconnectingWebSocket
+      this.socket = new ReconnectingWebSocket(socket.url, null, {
+        reconnectInterval: 1000,
+        timeoutInterval: 10000,
+        maxReconnectAttempts: 10
+      });
+    } else {
+      throw new Error('Invalid socket parameter. Must be a URL string, WebSocket instance, or ReconnectingWebSocket instance.');
+    }
+  }
+
+  /**
+   * Setup WebSocket event listeners
+   * @private
+   */
+  setupEvents() {
+    this.socket.addEventListener('open', (event) => {
+      this.open = true;
+      this.log('WebSocket connection opened', event);
+      
+      // Process queued messages
+      this.processMessageQueue();
+      
+      // Dispatch open event
+      this.dispatchCustomEvent('open', { event });
+    });
+
+    this.socket.addEventListener('close', (event) => {
+      this.open = false;
+      this.log('WebSocket connection closed', event);
+      this.stopAutoPing();
+      this.dispatchCustomEvent('close', { event });
+    });
+
+    this.socket.addEventListener('error', (event) => {
+      this.log('WebSocket error occurred', event, 'error');
+      this.dispatchCustomEvent('error', { event });
+    });
+
+    this.socket.addEventListener('message', (event) => {
+      this.handleMessage(event);
+    });
+  }
+
+  /**
+   * Handle incoming WebSocket messages
+   * @param {MessageEvent} event - WebSocket message event
+   * @private
+   */
+  handleMessage(event) {
+    let data;
+    
+    try {
+      // Handle ping/pong
+      if (event.data === 'Pong' || event.data === '') {
+        data = { event: 'Pong', body: { data: 'Pong' } };
+      } else {
+        data = JSON.parse(event.data);
+      }
+    } catch (error) {
+      this.log('Failed to parse message data', { data: event.data, error }, 'warn');
+      data = { event: 'parse_error', body: { data: event.data, error: error.message } };
+    }
+
+    // Extract the actual data payload
+    const sendData = data.data || data.body || data;
+    
+    // Create and dispatch custom event
+    const eventName = data.event || data.action || 'message';
+    this.dispatchCustomEvent(eventName, sendData);
+    
+    // Also dispatch a generic message event
+    this.dispatchCustomEvent('message', { event: eventName, data: sendData, original: data });
+    
+    this.log('Message received', { event: eventName, data: sendData });
+  }
+
+  /**
+   * Dispatch a custom event
+   * @param {string} eventName - Name of the event
+   * @param {*} detail - Event detail data
+   * @private
+   */
+  dispatchCustomEvent(eventName, detail) {
+    const event = new CustomEvent(eventName, {
+      detail,
+      bubbles: true,
+      cancelable: true
+    });
+    
+    this.eventTarget.dispatchEvent(event);
+  }
+
+  /**
+   * Start automatic ping messages
+   * @private
+   */
+  startAutoPing() {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+    }
+    
+    this.pingTimer = setInterval(() => {
+      if (this.open) {
+        this.ping();
+      }
+    }, this.options.pingInterval * 1000);
+    
+    this.log('Auto-ping started', { interval: this.options.pingInterval });
+  }
+
+  /**
+   * Stop automatic ping messages
+   * @private
+   */
+  stopAutoPing() {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
+      this.log('Auto-ping stopped');
+    }
+  }
+
+  /**
+   * Process queued messages when connection becomes available
+   * @private
+   */
+  processMessageQueue() {
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      this.sendRaw(message);
+    }
+    this.log('Message queue processed', { count: this.messageQueue.length });
+  }
+
+  /**
+   * Send raw data through WebSocket
+   * @param {string} data - Data to send
+   * @private
+   */
+  sendRaw(data) {
+    if (this.open) {
+      this.socket.send(data);
+    } else {
+      this.messageQueue.push(data);
+      this.log('Message queued (connection not open)', { data });
+    }
+  }
+
+  /**
+   * Add event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback function
+   * @param {Object} options - Event listener options
+   */
+  on(event, callback, options = {}) {
+    this.addEventListener(event, (event) => {
+      callback(event.detail);
+    }, options);
+    
+    // Track listeners for cleanup
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, []);
+    }
+    this.eventListeners.get(event).push(callback);
+  }
+
+  /**
+   * Remove event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback function to remove
+   */
+  off(event, callback) {
+    this.removeEventListener(event, callback);
+    
+    // Remove from tracked listeners
+    if (this.eventListeners.has(event)) {
+      const listeners = this.eventListeners.get(event);
+      const index = listeners.indexOf(callback);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
+    }
+  }
+
+  /**
+   * Listen for specific actions or all messages
+   * @param {string} action - Action to listen for, or '*' for all
+   * @param {Function} callback - Callback function
+   */
+  listen(action, callback) {
+    if (action === '*') {
+      this.on('message', callback);
+    } else {
+      this.on(action, callback);
+    }
+  }
+
+  /**
+   * Emit an action with optional data
+   * @param {string} action - Action name
+   * @param {*} data - Data to send (optional)
+   */
+  emit(action, data = '') {
+    const message = {
+      action: action
+    };
+    
+    if (data !== '') {
+      message.data = data;
+    }
+    
+    this.sendRaw(JSON.stringify(message));
+    this.log('Action emitted', { action, data });
+  }
+
+  /**
+   * Send a chat message
+   * @param {*} data - Chat message data
+   */
+  chatMessage(data = '') {
+    const message = {
+      action: 'chatMessage',
+      body: data
+    };
+    
+    this.sendRaw(JSON.stringify(message));
+    this.log('Chat message sent', { data });
+  }
+
+  /**
+   * Send a general message
+   * @param {*} data - Message data
+   */
+  message(data = '') {
+    const message = {
+      action: 'message',
+      body: data
+    };
+    
+    this.sendRaw(JSON.stringify(message));
+    this.log('Message sent', { data });
+  }
+
+  /**
+   * Send a ping message
+   */
+  ping() {
+    this.sendRaw('Ping');
+    this.log('Ping sent');
+  }
+
+  /**
+   * Close the WebSocket connection
+   */
+  close() {
+    this.stopAutoPing();
+    this.socket.close();
+    this.open = false;
+    this.log('WebSocket connection closed manually');
+  }
+
+  /**
+   * Mark connection as closed (useful for external connection management)
+   */
+  markAsClosed() {
+    this.open = false;
+    this.stopAutoPing();
+    this.log('Connection marked as closed');
+  }
+
+  /**
+   * Execute callback when connection opens
+   * @param {Function} callback - Callback function
+   */
+  onOpen(callback) {
+    if (this.open) {
+      callback();
+    } else {
+      this.addEventListener('open', callback, { once: true });
+    }
+  }
+
+  /**
+   * Get connection status
+   * @returns {Object} Connection status information
+   */
+  getStatus() {
+    return {
+      open: this.open,
+      readyState: this.socket.readyState,
+      url: this.socket.url,
+      connectionId: this.connectionId,
+      messageQueueLength: this.messageQueue.length,
+      pingInterval: this.options.pingInterval,
+      autoPing: this.options.autoPing
+    };
+  }
+
+  /**
+   * Set connection ID (useful for tracking connections)
+   * @param {string} id - Connection ID
+   */
+  setConnectionId(id) {
+    this.connectionId = id;
+    this.log('Connection ID set', { id });
+  }
+
+  /**
+   * Log message if debug is enabled
+   * @param {string} message - Log message
+   * @param {*} data - Additional data
+   * @param {string} level - Log level (log, warn, error)
+   * @private
+   */
+  log(message, data = null, level = 'log') {
+    if (this.options.debug) {
+      const prefix = '[WebSocketClient]';
+      if (data) {
+        console[level](prefix, message, data);
+      } else {
+        console[level](prefix, message);
+      }
+    }
+  }
+
+  /**
+   * Clean up resources
+   */
+  destroy() {
+    this.stopAutoPing();
+    this.close();
+    
+    // Remove all event listeners
+    this.eventListeners.forEach((listeners, event) => {
+      listeners.forEach(callback => {
+        this.off(event, callback);
+      });
+    });
+    this.eventListeners.clear();
+    
+    this.log('WebSocket client destroyed');
+  }
+}
+
+/**
+ * Factory function to create a WebSocket client with ReconnectingWebSocket
+ * @param {string} webSocketUrl - WebSocket server URL
+ * @param {Object} options - Configuration options
+ * @param {number} options.pingTime - Ping interval in seconds (default: 15)
+ * @param {Object} options.reconnectingOptions - ReconnectingWebSocket options
+ * @returns {WebSocketClient} WebSocket client instance
+ */
+export function createWebSocketClient(webSocketUrl, options = {}) {
+  const {
+    pingTime = 15,
+    reconnectingOptions = {
+      reconnectInterval: 1000,
+      timeoutInterval: 10000,
+      maxReconnectAttempts: 10
+    },
+    ...clientOptions
+  } = options;
+
+  const socket = new ReconnectingWebSocket(webSocketUrl, null, reconnectingOptions);
+  const client = new WebSocketClient(socket, { ...clientOptions, pingInterval: pingTime });
+  
+  return client;
+}
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use createWebSocketClient instead
+ * @param {string} webSocketUrl - WebSocket server URL
+ * @param {number} pingTime - Ping interval in seconds
+ * @returns {Object} Object with socket and io properties
+ */
+export function webSocketIOconnect(webSocketUrl, pingTime = 15) {
+  console.warn('webSocketIOconnect is deprecated. Use createWebSocketClient instead.');
+  
+  const socket = new ReconnectingWebSocket(webSocketUrl, null, {
+    reconnectInterval: 1000,
+    timeoutInterval: 10000,
+    maxReconnectAttempts: 10
+  });
+  
+  const io = new WebSocketClient(socket, { pingInterval: pingTime });
+  
+  return { socket, io };
+}
+
+// Export default
+export default WebSocketClient;
