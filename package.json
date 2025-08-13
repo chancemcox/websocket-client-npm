@@ -1,11 +1,10 @@
 {
-  "name": "websocket-client-io",
+  "name": "@chancecox/websocket-client",
   "version": "1.0.0",
-  "description": "A modern, feature-rich WebSocket client with event handling, reconnection, and ping/pong support",
+  "description": "A comprehensive WebSocket client package with SimpleWebSocket (app authentication) and WebSocketClient (advanced features)",
   "type": "module",
   "main": "dist/websocket-client.js",
   "module": "dist/websocket-client.esm.js",
-  "types": "dist/websocket-client.d.ts",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
@@ -21,23 +20,29 @@
   "keywords": [
     "websocket",
     "client",
+    "authentication",
+    "app-id",
+    "app-secret",
     "reconnection",
     "events",
     "ping",
     "pong",
     "real-time",
-    "communication"
+    "communication",
+    "laravel",
+    "bref",
+    "aws"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Chance Cox <chance.cox@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/websocket-client-io.git"
+    "url": "https://github.com/chancemcox/websocket-client-npm.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/websocket-client-io/issues"
+    "url": "https://github.com/chancecox/websocket-client-npm/issues"
   },
-  "homepage": "https://github.com/yourusername/websocket-client-io#readme",
+  "homepage": "https://github.com/chancecox/websocket-client-npm#readme",
   "devDependencies": {
     "@babel/core": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
