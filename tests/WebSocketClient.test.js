@@ -67,7 +67,10 @@ class MockReconnectingWebSocket {
 
 // Mock the ReconnectingWebSocket module
 jest.mock('reconnecting-websocket', () => {
-  return MockReconnectingWebSocket;
+  return {
+    __esModule: true,
+    default: MockReconnectingWebSocket
+  };
 });
 
 describe('WebSocketClient', () => {

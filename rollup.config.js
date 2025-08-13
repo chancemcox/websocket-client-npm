@@ -1,13 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import babel from '@rollup/plugin-babel';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import typescript from 'rollup-plugin-typescript2';
 
 export default [
   // CommonJS build
   {
-    input: 'src/WebSocketClient.js',
+    input: 'src/index.js',
     output: {
       file: 'dist/websocket-client.js',
       format: 'cjs',
@@ -28,7 +28,7 @@ export default [
   
   // ES Module build
   {
-    input: 'src/WebSocketClient.js',
+    input: 'src/index.js',
     output: {
       file: 'dist/websocket-client.esm.js',
       format: 'esm',
@@ -49,7 +49,7 @@ export default [
   
   // UMD build for browser
   {
-    input: 'src/WebSocketClient.js',
+    input: 'src/index.js',
     output: {
       file: 'dist/websocket-client.umd.js',
       format: 'umd',

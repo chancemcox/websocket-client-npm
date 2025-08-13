@@ -1,6 +1,9 @@
 # WebSocket Client IO
 
-A modern, feature-rich WebSocket client with event handling, reconnection, and ping/pong support. Built with ES6+ features and designed for both browser and Node.js environments.
+A comprehensive WebSocket client package featuring two different WebSocket implementations:
+
+1. **🔗 SimpleWebSocket** - A lightweight WebSocket client with app authentication support
+2. **🚀 WebSocketClient** - A feature-rich WebSocket client with automatic reconnection, ping/pong, and advanced event handling Built with ES6+ features and designed for both browser and Node.js environments.
 
 ## 🚀 Features
 
@@ -13,6 +16,62 @@ A modern, feature-rich WebSocket client with event handling, reconnection, and p
 - **Debug Logging**: Optional debug logging for development
 - **Browser Compatible**: Works in all modern browsers
 - **Node.js Support**: Can be used in Node.js environments
+
+## 🔗 SimpleWebSocket
+
+The `SimpleWebSocket` class provides a lightweight, easy-to-use WebSocket client with built-in app authentication support.
+
+### Features
+- **Simple Configuration**: Just provide a URL and optional authentication parameters
+- **App Authentication**: Built-in support for app ID, app secret, and access tokens
+- **Callback-Based**: Simple callback interface for all events
+- **URL Parameters**: Automatic injection of authentication parameters into the WebSocket URL
+- **Binary Support**: ArrayBuffer binary type support for efficient data transfer
+
+### Usage
+
+```javascript
+import { SimpleWebSocket } from 'websocket-client-io';
+
+const ws = new SimpleWebSocket({
+  url: 'wss://your-server.com',
+  appId: 'your-app-id',
+  appSecret: 'your-app-secret',
+  accessToken: 'user-token',
+  onConnect: (connection) => {
+    console.log('Connected!', connection);
+  },
+  onMessage: (data) => {
+    console.log('Message received:', data);
+  },
+  onError: (error) => {
+    console.error('Error:', error);
+  },
+  onClose: () => {
+    console.log('Connection closed');
+  }
+});
+
+// Send a message
+ws.send('Hello Server!', (error, result) => {
+  if (error) {
+    console.error('Send failed:', error.message);
+  } else {
+    console.log('Message sent successfully');
+  }
+});
+
+// Get connection status
+const status = ws.getStatus();
+console.log('Status:', status);
+
+// Disconnect
+ws.disconnect();
+```
+
+## 🚀 WebSocketClient (Advanced)
+
+The `WebSocketClient` class provides advanced features like automatic reconnection, ping/pong, and event-driven architecture.
 
 ## 📦 Installation
 
