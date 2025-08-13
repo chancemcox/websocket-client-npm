@@ -1,536 +1,130 @@
-# WebSocket Client IO
+# websocket-client-io
 
-A comprehensive WebSocket client package featuring two different WebSocket implementations:
+A modern, feature-rich WebSocket client with event handling, reconnection, and ping/pong support. Built on top of `reconnecting-websocket` for resilient connections and a simple, event-driven API.
 
-1. **🔗 SimpleWebSocket** - A lightweight WebSocket client with app authentication support
-2. **🚀 WebSocketClient** - A feature-rich WebSocket client with automatic reconnection, ping/pong, and advanced event handling Built with ES6+ features and designed for both browser and Node.js environments.
-
-## 🚀 Features
-
-- **Automatic Reconnection**: Built-in reconnection logic with configurable retry intervals
-- **Event-Driven Architecture**: Clean event-based API for handling WebSocket events
-- **Ping/Pong Support**: Automatic ping messages to keep connections alive
-- **Message Queuing**: Messages are queued when disconnected and sent when reconnected
-- **TypeScript Support**: Full TypeScript definitions included
-- **Multiple Build Formats**: CommonJS, ES Modules, and UMD builds
-- **Debug Logging**: Optional debug logging for development
-- **Browser Compatible**: Works in all modern browsers
-- **Node.js Support**: Can be used in Node.js environments
-
-## 🔗 SimpleWebSocket
-
-The `SimpleWebSocket` class provides a lightweight, easy-to-use WebSocket client with built-in app authentication support.
-
-### Features
-- **Simple Configuration**: Just provide a URL and optional authentication parameters
-- **App Authentication**: Built-in support for app ID, app secret, and access tokens
-- **Callback-Based**: Simple callback interface for all events
-- **URL Parameters**: Automatic injection of authentication parameters into the WebSocket URL
-- **Binary Support**: ArrayBuffer binary type support for efficient data transfer
-
-### Usage
-
-```javascript
-import { SimpleWebSocket } from 'websocket-client-io';
-
-const ws = new SimpleWebSocket({
-  url: 'wss://your-server.com',
-  appId: 'your-app-id',
-  appSecret: 'your-app-secret',
-  accessToken: 'user-token',
-  onConnect: (connection) => {
-    console.log('Connected!', connection);
-  },
-  onMessage: (data) => {
-    console.log('Message received:', data);
-  },
-  onError: (error) => {
-    console.error('Error:', error);
-  },
-  onClose: () => {
-    console.log('Connection closed');
-  }
-});
-
-// Send a message
-ws.send('Hello Server!', (error, result) => {
-  if (error) {
-    console.error('Send failed:', error.message);
-  } else {
-    console.log('Message sent successfully');
-  }
-});
-
-// Get connection status
-const status = ws.getStatus();
-console.log('Status:', status);
-
-// Disconnect
-ws.disconnect();
-```
-
-## 🚀 WebSocketClient (Advanced)
-
-The `WebSocketClient` class provides advanced features like automatic reconnection, ping/pong, and event-driven architecture.
-
-## 📦 Installation
-
-### NPM
+## Installation
 
 ```bash
-npm install websocket-client-io
+npm install websocket-client-io reconnecting-websocket
 ```
 
-### Yarn
+## Quick start
 
-```bash
-yarn add websocket-client-io
-```
-
-### CDN
-
-```html
-<script src="https://unpkg.com/websocket-client-io/dist/websocket-client.umd.js"></script>
-```
-
-## 🔧 Dependencies
-
-This package requires `reconnecting-websocket` as a peer dependency:
-
-```bash
-npm install reconnecting-websocket
-```
-
-## 📖 Usage
-
-### Basic Usage
-
-```javascript
+```js
 import { createWebSocketClient } from 'websocket-client-io';
 
-// Create a WebSocket client
-const client = createWebSocketClient('wss://your-server.com', {
-  pingInterval: 15,        // Send ping every 15 seconds
-  autoPing: true,          // Enable automatic ping
-  debug: true              // Enable debug logging
+const client = createWebSocketClient('wss://example.com/socket', {
+  pingTime: 20, // seconds
+  debug: true,
 });
 
-// Listen for connection events
 client.on('open', () => {
-  console.log('Connected to server');
+  console.log('Connected');
 });
 
-client.on('close', () => {
-  console.log('Disconnected from server');
+client.on('message', ({ event, data }) => {
+  console.log('Message:', event, data);
 });
 
-client.on('error', (error) => {
-  console.error('Connection error:', error);
-});
+client.emit('message', { hello: 'world' });
 
-// Listen for messages
-client.on('message', (data) => {
-  console.log('Message received:', data);
+// Listen for a specific action (server-side event name)
+client.listen('chatMessage', (data) => {
+  console.log('Chat:', data);
 });
-
-// Send messages
-client.emit('action', { data: 'Hello Server!' });
-client.chatMessage('Hello everyone!');
-client.message('General message');
 ```
 
-### Advanced Usage
+## API
 
-```javascript
-import { WebSocketClient } from 'websocket-client-io';
-import ReconnectingWebSocket from 'reconnecting-websocket';
+### createWebSocketClient(url, options?)
+Creates and returns a `WebSocketClient` that automatically reconnects.
 
-// Create custom ReconnectingWebSocket
-const socket = new ReconnectingWebSocket('wss://your-server.com', null, {
+- **url**: WebSocket URL (`wss://` or `ws://`).
+- **options**: Object
+  - **pingTime**: number (default: 15) — seconds between automatic pings
+  - **reconnectingOptions**: options passed to `reconnecting-websocket` (defaults shown below)
+  - Any other option is forwarded to `WebSocketClient` (see below)
+
+Default `reconnectingOptions` used if not provided:
+```js
+{
   reconnectInterval: 1000,
   timeoutInterval: 10000,
-  maxReconnectAttempts: 10
-});
-
-// Create client with custom socket
-const client = new WebSocketClient(socket, {
-  pingInterval: 30,
-  autoPing: false,  // Disable auto-ping
-  debug: true
-});
-
-// Custom event handling
-client.on('chatMessage', (data) => {
-  console.log('Chat message:', data);
-});
-
-client.on('userJoined', (user) => {
-  console.log('User joined:', user);
-});
-
-// Send custom actions
-client.emit('joinRoom', { room: 'general' });
-client.emit('leaveRoom', { room: 'general' });
-
-// Manual ping
-client.ping();
-
-// Get connection status
-const status = client.getStatus();
-console.log('Connection status:', status);
-```
-
-### Event Handling
-
-```javascript
-// Listen for specific events
-client.on('notification', (data) => {
-  showNotification(data);
-});
-
-client.on('update', (data) => {
-  updateUI(data);
-});
-
-// Listen for all messages
-client.listen('*', (data) => {
-  console.log('All messages:', data);
-});
-
-// Listen for specific actions
-client.listen('chatMessage', (data) => {
-  console.log('Chat message:', data);
-});
-
-// Remove event listeners
-const handler = (data) => console.log(data);
-client.on('event', handler);
-client.off('event', handler);
-```
-
-### Connection Management
-
-```javascript
-// Check connection status
-if (client.open) {
-  console.log('Connected');
-} else {
-  console.log('Disconnected');
+  maxReconnectAttempts: 10,
 }
-
-// Get detailed status
-const status = client.getStatus();
-console.log('Ready state:', status.readyState);
-console.log('Message queue length:', status.messageQueueLength);
-
-// Set connection ID (useful for tracking)
-client.setConnectionId('user-123');
-
-// Close connection
-client.close();
-
-// Clean up resources
-client.destroy();
 ```
 
-## ⚙️ Configuration Options
+Returns: `WebSocketClient`
 
-### Client Options
+### Class: WebSocketClient
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pingInterval` | number | 15 | Ping interval in seconds |
-| `autoPing` | boolean | true | Enable automatic ping messages |
-| `debug` | boolean | false | Enable debug logging |
+Constructs a client around an existing `WebSocket` or `ReconnectingWebSocket` instance, or a URL string.
 
-### ReconnectingWebSocket Options
+Constructor options:
+- **pingInterval**: number (default: 15) — seconds between automatic pings
+- **autoPing**: boolean (default: true) — whether to automatically send pings
+- **debug**: boolean (default: false) — log to console when true
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `reconnectInterval` | number | 1000 | Reconnection interval in milliseconds |
-| `timeoutInterval` | number | 10000 | Connection timeout in milliseconds |
-| `maxReconnectAttempts` | number | 10 | Maximum reconnection attempts |
+Key methods:
+- **on(event, callback, options?)**: Subscribe to an event (see Events below)
+- **off(event, callback)**: Unsubscribe
+- **listen(action, callback)**: Subscribe to a specific message action or `'*'` for all
+- **emit(action, data?)**: Send `{ action, data }`
+- **chatMessage(data?)**: Send `{ action: 'chatMessage', body: data }`
+- **message(data?)**: Send `{ action: 'message', body: data }`
+- **ping()**: Send a raw `Ping`
+- **close()**: Close the socket and stop auto-ping
+- **markAsClosed()**: Mark connection as closed and stop auto-ping
+- **onOpen(callback)**: Run once when connection is open (immediately if already open)
+- **getStatus()**: Returns `{ open, readyState, url, connectionId, messageQueueLength, pingInterval, autoPing }`
+- **setConnectionId(id)**: Tag the connection
+- **destroy()**: Cleanup listeners and close the connection
 
-## 📡 API Reference
+## Events
 
-### Methods
+The client dispatches DOM `CustomEvent`s internally and exposes a simple `on()` API.
 
-#### `createWebSocketClient(url, options)`
-Factory function to create a WebSocket client.
+Built-in events:
+- **open**: connection established
+- **close**: connection closed
+- **error**: error raised by the socket
+- **message**: all messages, with shape `{ event, data, original }`
 
-#### `new WebSocketClient(socket, options)`
-Constructor for creating a WebSocket client instance.
+Server-defined events:
+- Any `event`/`action` property in server messages is dispatched with that name.
+- Example: a server message `{ event: 'chatMessage', data: {...} }` triggers `on('chatMessage', handler)`.
 
-#### `client.on(event, callback, options)`
-Add event listener for a specific event.
+## Message formats
 
-#### `client.off(event, callback)`
-Remove event listener.
+Incoming handling:
+- If the raw message is the string `'Pong'` or empty string, the client treats it as a pong.
+- Otherwise, it attempts `JSON.parse(event.data)` and uses `data.data || data.body || data` as the payload.
 
-#### `client.listen(action, callback)`
-Listen for specific actions or all messages.
+Outgoing helpers:
+- `emit(action, data?)` sends `{ action, data }` (when `data` is provided)
+- `message(data?)` sends `{ action: 'message', body: data }`
+- `chatMessage(data?)` sends `{ action: 'chatMessage', body: data }`
 
-#### `client.emit(action, data)`
-Emit an action with optional data.
+## Usage notes
 
-#### `client.chatMessage(data)`
-Send a chat message.
+- This library targets browser environments (uses `document` and `CustomEvent`). For Node-based tests, use a DOM shim like `jsdom`.
+- If you pass a native `WebSocket`, it is wrapped in a `ReconnectingWebSocket` for resilience.
+- Set `debug: true` to see prefixed logs in the console.
 
-#### `client.message(data)`
-Send a general message.
+## Generating documentation
 
-#### `client.ping()`
-Send a ping message.
-
-#### `client.close()`
-Close the WebSocket connection.
-
-#### `client.destroy()`
-Clean up all resources and event listeners.
-
-#### `client.getStatus()`
-Get connection status information.
-
-#### `client.setConnectionId(id)`
-Set connection ID for tracking.
-
-### Events
-
-- `open` - Connection opened
-- `close` - Connection closed
-- `error` - Connection error
-- `message` - Message received
-- `Pong` - Pong response received
-- Custom events based on your server's message format
-
-## 🌐 Browser Support
-
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
-
-## 📦 Build Outputs
-
-The package provides multiple build formats:
-
-- **CommonJS** (`dist/websocket-client.js`) - For Node.js and bundlers
-- **ES Modules** (`dist/websocket-client.esm.js`) - For modern bundlers
-- **UMD** (`dist/websocket-client.umd.js`) - For browser use
-
-## 🧪 Testing
+JSDoc comments are included throughout the source. Generate static docs with:
 
 ```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run linting
-npm run lint
-
-# Fix linting issues
-npm run lint:fix
-```
-
-## 🏗️ Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development build
-npm run dev
-
-# Build for production
-npm run build
-
-# Generate documentation
 npm run docs
 ```
 
-## 📝 Examples
+This will output HTML docs to the `docs/` directory.
 
-### React Component
+## Deprecations
 
-```jsx
-import React, { useEffect, useState } from 'react';
-import { createWebSocketClient } from 'websocket-client-io';
+- `webSocketIOconnect(url, pingTime?)` is deprecated. Use `createWebSocketClient(url, { pingTime })` instead.
 
-function ChatComponent() {
-  const [client, setClient] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [connected, setConnected] = useState(false);
+## License
 
-  useEffect(() => {
-    const wsClient = createWebSocketClient('wss://your-chat-server.com', {
-      pingInterval: 15,
-      debug: true
-    });
-
-    wsClient.on('open', () => {
-      setConnected(true);
-    });
-
-    wsClient.on('close', () => {
-      setConnected(false);
-    });
-
-    wsClient.on('chatMessage', (data) => {
-      setMessages(prev => [...prev, data]);
-    });
-
-    setClient(wsClient);
-
-    return () => {
-      wsClient.destroy();
-    };
-  }, []);
-
-  const sendMessage = (text) => {
-    if (client && connected) {
-      client.chatMessage(text);
-    }
-  };
-
-  return (
-    <div>
-      <div>Status: {connected ? 'Connected' : 'Disconnected'}</div>
-      <div>
-        {messages.map((msg, i) => (
-          <div key={i}>{msg}</div>
-        ))}
-      </div>
-      <button onClick={() => sendMessage('Hello!')}>
-        Send Message
-      </button>
-    </div>
-  );
-}
-```
-
-### Vue Component
-
-```vue
-<template>
-  <div>
-    <div>Status: {{ connected ? 'Connected' : 'Disconnected' }}</div>
-    <div v-for="(msg, i) in messages" :key="i">
-      {{ msg }}
-    </div>
-    <button @click="sendMessage">Send Message</button>
-  </div>
-</template>
-
-<script>
-import { createWebSocketClient } from 'websocket-client-io';
-
-export default {
-  data() {
-    return {
-      client: null,
-      connected: false,
-      messages: []
-    };
-  },
-  mounted() {
-    this.client = createWebSocketClient('wss://your-chat-server.com');
-    
-    this.client.on('open', () => {
-      this.connected = true;
-    });
-    
-    this.client.on('close', () => {
-      this.connected = false;
-    });
-    
-    this.client.on('chatMessage', (data) => {
-      this.messages.push(data);
-    });
-  },
-  beforeDestroy() {
-    if (this.client) {
-      this.client.destroy();
-    }
-  },
-  methods: {
-    sendMessage() {
-      if (this.client && this.connected) {
-        this.client.chatMessage('Hello from Vue!');
-      }
-    }
-  }
-};
-</script>
-```
-
-### Node.js Usage
-
-```javascript
-const { createWebSocketClient } = require('websocket-client-io');
-
-const client = createWebSocketClient('wss://your-server.com', {
-  pingInterval: 30,
-  debug: true
-});
-
-client.on('open', () => {
-  console.log('Connected to WebSocket server');
-});
-
-client.on('message', (data) => {
-  console.log('Received message:', data);
-});
-
-client.emit('subscribe', { channel: 'updates' });
-```
-
-## 🔍 Debugging
-
-Enable debug mode to see detailed logs:
-
-```javascript
-const client = createWebSocketClient('wss://your-server.com', {
-  debug: true
-});
-```
-
-Debug logs will show:
-- Connection events
-- Message sending/receiving
-- Ping/pong activity
-- Reconnection attempts
-- Error details
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### Development Setup
-
-1. Fork the repository
-2. Clone your fork
-3. Install dependencies: `npm install`
-4. Make your changes
-5. Run tests: `npm test`
-6. Submit a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [ReconnectingWebSocket](https://github.com/pladaria/reconnecting-websocket) - For the robust reconnection logic
-- [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) - For the underlying WebSocket implementation
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/websocket-client-io/issues)
-- **Documentation**: [GitHub Wiki](https://github.com/yourusername/websocket-client-io/wiki)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/websocket-client-io/discussions)
-
----
-
-**Built with ❤️ for the WebSocket community**
+MIT
