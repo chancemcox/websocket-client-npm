@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: WebSocketClient</title>
+    <title>JSDoc: Class: SimpleWebSocket</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: WebSocketClient</h1>
+    <h1 class="page-title">Class: SimpleWebSocket</h1>
 
     
 
@@ -29,7 +29,7 @@
 <header>
     
         <h2><span class="attribs"><span class="type-signature"></span></span>
-            <span class="ancestors"><a href="WebSocketClient.html">WebSocketClient</a>#</span>WebSocketClient<span class="signature">(socket, options)</span><span class="type-signature"></span></h2>
+            <span class="ancestors"><a href="SimpleWebSocket.html">SimpleWebSocket</a>#</span>SimpleWebSocket<span class="signature">(options)</span><span class="type-signature"></span></h2>
         
     
 </header>
@@ -42,7 +42,7 @@
     
 
     
-    <h4 class="name" id="WebSocketClient"><span class="type-signature"></span>new WebSocketClient<span class="signature">(socket, options)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="SimpleWebSocket"><span class="type-signature"></span>new SimpleWebSocket<span class="signature">(options)</span><span class="type-signature"></span></h4>
     
 
     
@@ -50,7 +50,7 @@
 
 
 <div class="description">
-    Create a new WebSocket client instance
+    Create a new SimpleWebSocket instance
 </div>
 
 
@@ -82,35 +82,6 @@
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>socket</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-|
-
-<span class="param-type">WebSocket</span>
-|
-
-<span class="param-type">ReconnectingWebSocket</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">WebSocket URL, WebSocket instance, or ReconnectingWebSocket instance</td>
-        </tr>
-
     
 
         <tr>
@@ -157,13 +128,13 @@
 
         <tr>
             
-                <td class="name"><code>pingInterval</code></td>
+                <td class="name"><code>url</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">number</span>
+<span class="param-type">string</span>
 
 
             
@@ -173,20 +144,20 @@
 
             
 
-            <td class="description last">Ping interval in seconds (default: 15)</td>
+            <td class="description last">WebSocket URL (required)</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>autoPing</code></td>
+                <td class="name"><code>accessToken</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">boolean</span>
+<span class="param-type">string</span>
 
 
             
@@ -196,20 +167,20 @@
 
             
 
-            <td class="description last">Whether to automatically send ping messages (default: true)</td>
+            <td class="description last">Access token for authentication</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>debug</code></td>
+                <td class="name"><code>appId</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">boolean</span>
+<span class="param-type">string</span>
 
 
             
@@ -219,7 +190,122 @@
 
             
 
-            <td class="description last">Enable debug logging (default: false)</td>
+            <td class="description last">App ID for authentication</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>appSecret</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">App secret for authentication</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onConnect</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Connection established callback</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onMessage</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Message received callback</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onError</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Error callback</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onClose</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Connection closed callback</td>
         </tr>
 
     
@@ -267,7 +353,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="WebSocketClient.js.html">WebSocketClient.js</a>, <a href="WebSocketClient.js.html#line22">line 22</a>
+        <a href="SimpleWebSocket.js.html">SimpleWebSocket.js</a>, <a href="SimpleWebSocket.js.html#line24">line 24</a>
     </li></ul></dd>
     
 
